@@ -1,0 +1,4 @@
+/home/vovasqu/Downloads/clion-2017.2.2/bin/cmake/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/vovasqu/YandexDisk/4_course/nets/lab01/tcp
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/vovasqu/YandexDisk/4_course/nets/lab01/tcp/cmake-build-debug

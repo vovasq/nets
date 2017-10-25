@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/vovasqu/YandexDisk/4_course/nets/lab01/tcp/main.cpp
+iostream
+-
+unistd.h
+-
+sys/socket.h
+-
+netinet/in.h
+-
+map
+-
+vector
+-
+spdlog/spdlog.h
+-
+

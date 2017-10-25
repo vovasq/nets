@@ -1,0 +1,1 @@
+/usr/bin/c++  -fpermissive -g   CMakeFiles/tcp.dir/main.cpp.o  -o tcp -lpthread 
