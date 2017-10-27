@@ -7,16 +7,15 @@
 #include <spdlog/spdlog.h>
 
 const int  MAX_MESSAGE_SIZE = 4;
-const int  MAX_CLIENTS = 2;
+//const int  MAX_CLIENTS = 2;
 const int  COMMAND_NUM = 4;
-int MainSock = socket(AF_INET, SOCK_STREAM, 0);
 
 auto logger = spdlog::rotating_logger_mt("clients_logger", "logthreads", 1024*1024, 1);
 auto mainlog = spdlog::rotating_logger_mt("main_logger", "log", 1024*1024, 1);
 
-std::vector< std::pair<pthread_t , long> > clients;
+std::vector< std::pair<pthread_t, long> > clients;
 pthread_mutex_t main_log_mtx;
-std::array<bool, MAX_CLIENTS> idArray;
+//std::array<bool, MAX_CLIENTS> idArray;
 std::array<std :: string, COMMAND_NUM> command_list{{
 //        "SEND",
         "kill",
@@ -66,12 +65,6 @@ bool kill_client(int id)
     return true;
 }
 
-void initIDArr()
-{
-    for (int i = 0; i < MAX_CLIENTS; ++i)
-        idArray[i] = true;
-}
-
 void showCommands()
 {
     std::cout << "List of the commands is:\n";
@@ -100,20 +93,43 @@ void show()
 
 int compare_string(char *first, char *second)
 {
-    while (*first == *second) {
-        if (*first == '\0' || *second == '\0')
-            break;
-
-        first++;
-        second++;
-    }
-
-    if (*first == '\0' && *second == '\0')
-        return 1;
-    else
-        return 0;
+    return (strcmp(first, second) == 0);
+//    while (*first == *second) {
+//        if (*first == '\0' || *second == '\0')
+//            break;
+//
+//        first++;
+//        second++;
+//    }
+//
+//    if (*first == '\0' && *second == '\0')
+//        return 1;
+//    else
+//        return 0;
 }
 
+//
+int readn(int sock, char * buff, int size, int flag)
+{
+    int recv_size = 0;
+    while(recv_size < size)
+    {
+        char temp_buff[size];
+        for (int j = 0; j < size ; ++j) {
+            temp_buff[j] = 0;
+        }
+        int temp_recv = recv(sock, temp_buff, size,0);
+        if(temp_recv < 0)
+            return -1;
+//        std::cout << "temp_recv = " << temp_recv<<std::endl;
+        for(int i = 0; i < temp_recv; i++)
+            buff[i + recv_size] = temp_buff[i];
+        recv_size += temp_recv;
+//        std::cout << "buff = " << buff << std::endl;
+    }
+//    std::cout<<"kek" << std::endl;
+    return recv_size;
+}
 void *run_client(void *param)
 {
     int i = 0;
@@ -125,8 +141,8 @@ void *run_client(void *param)
             Buffer[j] = 0;
         }
 //        logger->info("sock number {}", sock);
-        if(recv(sock, Buffer, MAX_MESSAGE_SIZE, MSG_NOSIGNAL) == -1)
-//           || recv(sock, Buffer, MAX_MESSAGE_SIZE, MSG_NOSIGNAL) ==  0)
+//        if(recv(sock, Buffer, MAX_MESSAGE_SIZE, MSG_NOSIGNAL) == -1)
+        if(readn(sock, Buffer, MAX_MESSAGE_SIZE, MSG_NOSIGNAL) ==  -1)
         {
             break;
         }
@@ -135,6 +151,7 @@ void *run_client(void *param)
             logger->info("bryyyak sock {}",sock);
             break;
         }
+//        std::cout << Buffer <<std::endl;
         logger->info( "message from sock {}: {}",sock, Buffer);
     }
 
@@ -177,26 +194,9 @@ void *run_client(void *param)
 void *run_server(void *param)
 {
     // have to init array of clients id
-    initIDArr();
+//    initIDArr();
 
-    struct sockaddr_in SockAddr;
-    SockAddr.sin_family = AF_INET;
-    SockAddr.sin_port = htons(1234);
-    SockAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    if(bind(MainSock, (struct sockaddr *) (&SockAddr), sizeof(SockAddr)) == 0)
-        mainlog->info("Server is bind");
-    else{
-        mainlog->info("Server bind failed\n");
-        return NULL;
-    }
-    if(listen(MainSock, SOMAXCONN) == 0)
-        mainlog->info("Server is ready");
-    else{
-        mainlog->info("Server does not listen");
-        return NULL;
-    }
-
+    long MainSock = (long)param;
     while(1)
     {
         pthread_t thrd_tmp;
@@ -244,12 +244,25 @@ int main (int argc, char ** argv)
 {
     pthread_t server_init;
 
-    if(pthread_create(&server_init, NULL, run_server, NULL) == 0)
-    {
-        std::cout << "Server is started" << std::endl;
-    }
+    long MainSock = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in SockAddr;
+    SockAddr.sin_family = AF_INET;
+    SockAddr.sin_port = htons(1234);
+    SockAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    if(bind(MainSock, (struct sockaddr *) (&SockAddr), sizeof(SockAddr)) == 0)
+        mainlog->info("Server is bind");
     else
-        printf("Error: can not create server_init thread\n");
+        mainlog->info("Server bind failed\n");
+    if(listen(MainSock, SOMAXCONN) == 0)
+        mainlog->info("Server is ready");
+    else
+        mainlog->info("Server does not listen");
+
+    if(pthread_create(&server_init, NULL, run_server, (void *) (MainSock)) == 0)
+        std::cout << "Server is started" << std::endl;
+    else
+        std::cout << "Error: can not create server_init thread" << std::endl;
     while(true)
     {
         std :: string cmd_string;
@@ -304,9 +317,8 @@ int main (int argc, char ** argv)
             std::cout << "No such a command:  " << cmd_string <<"  ! Retry!"<<std::endl;
 
     }
-//    if(pthread_detach(server_init) == 0)
     if(pthread_join(server_init, NULL) == 0)
-        printf("Join is done # %li\nBye!\n", server_init);
+        std::cout << "Join is done # "<<  server_init << "\nBye!\n";
     else
         printf("Join fault # %li\n", server_init);
     return 0;

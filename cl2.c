@@ -33,7 +33,7 @@ int main(int argc, char ** argv)
 		std::cout<<"Input your message" << std::endl;
 		std::getline(std::cin, s);
         usleep(1000000);
-        send(Socket, s.c_str(), s.size(), MSG_NOSIGNAL);
+//        int s = send(Socket, s.c_str(), s.size(), MSG_NOSIGNAL);
 //	    if(send(Socket, s.c_str(), s.size(), MSG_NOSIGNAL) == -1)
 //            break;
     }while(send(Socket, s.c_str(), s.size(), MSG_NOSIGNAL) != -1);
